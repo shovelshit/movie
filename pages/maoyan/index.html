@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>猫眼影院场次监控 - 云端版</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- 登录层: 首次进入 / 切换连接时显示 -->
+  <div id="login-overlay" class="overlay">
+    <div class="login-card">
+      <div class="login-logo">🎬</div>
+      <h1>猫眼影院场次监控</h1>
+      <p class="login-sub">Workers 每 10 分钟自动检查 · 新增场次 Bark 推送到 iPhone</p>
+      <div class="form-grid login-grid">
+        <label for="worker-url">Worker 地址</label>
+        <input id="worker-url" type="text" placeholder="默认同域(ltools.asia), 无需填写" />
+        <label for="token-input">访问令牌</label>
+        <input id="token-input" type="password" placeholder="请输入访问令牌" autocomplete="off" />
+      </div>
+      <div id="login-error" class="login-error hidden"></div>
+      <button id="btn-connect" class="btn primary block">进入监控</button>
+      <div class="login-foot muted">
+        配置自动保存在本机浏览器 · 多人使用请各自填自己的令牌<br />
+        <a href="admin.html">🛡️ 令牌管理（管理员）</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 主页面: 连接成功后显示 -->
+  <div id="main-page" class="container hidden">
+    <header>
+      <div class="title-block">
+        <h1>猫眼影院场次监控</h1>
+        <span class="subtitle">Workers 每 10 分钟自动检查，新增场次 Bark 推送到 iPhone</span>
+      </div>
+      <div class="header-right">
+        <div id="status-line" class="status-line muted">状态：未连接</div>
+        <a class="btn small ghost" href="admin.html">🛡️ 令牌管理</a>
+        <button id="btn-logout" class="btn small ghost">切换连接</button>
+        <a class="btn small ghost" href="../">🏠 回到首页</a>
+      </div>
+    </header>
+
+    <main class="main-grid">
+      <!-- 左列: 影院设置 + 监控设置与控制 + 使用说明 -->
+      <div class="col col-settings">
+        <section class="card">
+          <h2>影院设置</h2>
+          <div class="form-grid">
+            <label for="city-input">选择城市</label>
+            <div class="suggest-wrap">
+              <input id="city-input" type="text" placeholder="输入城市名，如：北京" autocomplete="off" />
+              <div id="city-dropdown" class="suggest-dropdown hidden"></div>
+            </div>
+            <label for="cinema-search">搜索影院</label>
+            <div class="suggest-wrap">
+              <div class="row no-margin">
+                <input id="cinema-search" type="text" placeholder="先选城市，再输入影院名模糊搜索" autocomplete="off" />
+                <button id="btn-search-cinema" class="btn small ghost">搜索</button>
+              </div>
+              <div id="cinema-dropdown" class="suggest-dropdown hidden"></div>
+            </div>
+          </div>
+          <details class="manual-cinema">
+            <summary>手动输入影院 ID / 粘贴链接</summary>
+            <div class="row">
+              <input id="cinema-input" type="text" placeholder="影院链接或影院 ID" />
+              <button id="btn-load-cinema" class="btn primary">加载</button>
+            </div>
+          </details>
+          <div id="cinema-name" class="cinema-name hidden"></div>
+        </section>
+
+        <section class="card">
+          <h2>监控设置与控制</h2>
+          <div class="form-grid">
+            <label for="interval-input">检查间隔（分钟）</label>
+            <input id="interval-input" type="number" min="10" max="720" step="10" value="10" />
+            <label for="bark-input">Bark Key 或 URL</label>
+            <input id="bark-input" type="text" placeholder="xxxxx 或 https://api.day.app/xxxxx" />
+          </div>
+          <div class="row">
+            <button id="btn-save" class="btn success">保存配置</button>
+            <button id="btn-check" class="btn">立即检查</button>
+            <button id="btn-test-bark" class="btn ghost">测试 Bark</button>
+            <button id="btn-toggle-monitor" class="btn danger">停止监控</button>
+          </div>
+          <div class="muted tip-line">Workers 每 10 分钟唤醒一次，间隔设为 30/60 分钟时会跳过过近的触发；最小生效间隔为 10 分钟。停止监控不会丢失配置，可随时恢复</div>
+        </section>
+
+        <section class="card grow muted-card">
+          <h2>使用说明</h2>
+          <ol class="help-list">
+            <li>在登录页填访问令牌，点「进入监控」（同域打开无需填地址）</li>
+            <li>选择城市，模糊搜索影院并加载（也可手动输入影院 ID）</li>
+            <li>勾选电影、设间隔和 Bark</li>
+            <li>点「保存配置」即完成，只需设置一次</li>
+          </ol>
+        </section>
+      </div>
+
+      <!-- 中列: 电影列表 -->
+      <div class="col col-movies">
+        <section class="card grow">
+          <div class="row space-between">
+            <h2>选择要监控的电影</h2>
+            <button id="btn-toggle-all" class="btn small ghost">全选</button>
+          </div>
+          <div id="movie-count" class="muted">连接后自动加载影片</div>
+          <div id="movie-list" class="movie-list">
+            <div class="muted empty-tip">连接云端后显示该影院在映影片</div>
+          </div>
+        </section>
+      </div>
+
+      <!-- 右列: 变化记录 -->
+      <div class="col col-log">
+        <section class="card grow">
+          <div class="row space-between">
+            <h2>变化记录</h2>
+            <button id="btn-refresh" class="btn small ghost">刷新</button>
+          </div>
+          <div id="log-panel" class="log-panel" aria-live="polite"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
