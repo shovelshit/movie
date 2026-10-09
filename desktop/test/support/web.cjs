@@ -2,8 +2,12 @@ const fs = require("node:fs/promises");
 const http = require("node:http");
 const path = require("node:path");
 
-const ROOT = path.resolve(__dirname, "../../../pages/maoyan");
-const STORE_ROOT = path.resolve(__dirname, "../../../pages/store");
+const MOVIE_ROOT = path.resolve(__dirname, "../../../pages/maoyan");
+const TOOLS_ROOT = process.env.TOOLS_REPO_ROOT
+  ? path.resolve(process.env.TOOLS_REPO_ROOT)
+  : path.resolve(__dirname, "../../../../");
+const ROOT = MOVIE_ROOT;
+const STORE_ROOT = path.join(TOOLS_ROOT, "modules", "store", "pages", "store");
 const MIME = new Map([
   [".html", "text/html; charset=utf-8"],
   [".css", "text/css; charset=utf-8"],
@@ -16,6 +20,10 @@ function proxyPath(pathname) {
   if (pathname.startsWith("/one/api/")) return pathname;
   if (pathname.startsWith("/api/")) return `/one${pathname}`;
   return "";
+}
+
+function resolveFixtureRoots() {
+  return { movie: ROOT, store: STORE_ROOT };
 }
 
 async function startWebFixture({ workerUrl }) {
@@ -90,4 +98,4 @@ async function startWebFixture({ workerUrl }) {
   };
 }
 
-module.exports = { startWebFixture };
+module.exports = { resolveFixtureRoots, startWebFixture };

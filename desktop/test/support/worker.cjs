@@ -1,5 +1,7 @@
 const http = require("node:http");
 
+const fixtureShowDate = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Shanghai" }).format(Date.now() + 86400000);
+
 async function startMockWorker({ rejectUpload = false } = {}) {
   const requests = [];
   const uploads = [];
@@ -180,7 +182,7 @@ async function startMockWorker({ rejectUpload = false } = {}) {
       ok: true,
       cinemaId: "25428",
       cinemaName: "寰映影城（大融城激光IMAX店）",
-      movies: [{ id: "100", nm: "奥德赛", showCount: 3, shows: [{ showDate: "2026-09-19", plist: [
+        movies: [{ id: "100", nm: "奥德赛", showCount: 3, shows: [{ showDate: fixtureShowDate, plist: [
         { seqNo: "900", tm: "18:40", lang: "英语", tp: "IMAX2D", th: "宽幅测试厅", ticketStatus: 0 },
         { seqNo: "901", tm: "19:10", lang: "英语", tp: "IMAX2D", th: "高排测试厅", ticketStatus: 0 },
         { seqNo: "902", tm: "19:40", lang: "英语", tp: "IMAX2D", th: "稀疏测试厅", ticketStatus: 0 },

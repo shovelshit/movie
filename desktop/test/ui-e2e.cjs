@@ -349,7 +349,11 @@ async function main() {
     await page.locator("#btn-lock-seats").click();
     await page.waitForFunction(() => !document.querySelector("#lock-overlay")?.classList.contains("hidden"));
     await assertLockShell(page, "lock shell before loading");
-    await page.locator("#lock-target-date").fill("2026-09-19");
+    const [fixtureShowDate, inferredTargetDate] = await page.evaluate(() => {
+      const format = (offset) => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Shanghai" }).format(new Date(Date.now() + offset * 86400000));
+      return [format(1), format(2)];
+    });
+    await page.locator("#lock-target-date").fill(fixtureShowDate);
     await page.waitForFunction(() => document.querySelector("#lock-template")?.value === "900");
     try {
       await page.waitForFunction(() => document.querySelectorAll("#lock-seat-grid [data-availability]").length > 0, null, { timeout: 8000 });
@@ -426,14 +430,14 @@ async function main() {
     assert.ok(lockOverflow <= 1, `lock dialog overflow: ${lockOverflow}`);
     await page.screenshot({ path: path.join(outputDirectory, "lock-mobile.png"), fullPage: true });
     // Exercise the inferred-seat confirmation before forcing a failed seat request.
-    await page.locator("#lock-target-date").fill("2026-09-30");
+    await page.locator("#lock-target-date").fill(inferredTargetDate);
     await page.locator("#lock-template").selectOption("900");
     await page.waitForFunction(() => document.querySelectorAll("#lock-seat-grid [data-availability]").length === 360);
     assert.equal(await page.locator("#lock-section-risk").count(), 0);
     await page.locator('#lock-seat-grid [data-availability="available"]').first().click();
     await page.locator("#btn-lock-submit").click();
     await page.waitForFunction(() => !document.querySelector("#lock-confirm-overlay")?.classList.contains("hidden"));
-    assert.equal(await page.locator("#lock-confirm-target").textContent(), "2026-09-30");
+    assert.equal(await page.locator("#lock-confirm-target").textContent(), inferredTargetDate);
     assert.match(await page.locator("#lock-confirm-window").textContent(), /±30 分钟/);
     assert.match(await page.locator("#lock-inference-warning").textContent(), /目标场次尚未确定.*需自行支付/);
     assert.equal(await page.locator("#btn-lock-confirm-save").isDisabled(), true);
@@ -476,7 +480,7 @@ async function main() {
         await page.locator("#btn-lock-seats").click();
         await page.waitForFunction(() => !document.querySelector("#lock-overlay")?.classList.contains("hidden"));
       }
-      await page.locator("#lock-target-date").fill("2026-09-30");
+      await page.locator("#lock-target-date").fill(inferredTargetDate);
       const label = `lock reachability ${viewport.width}x${viewport.height}`;
       await assertLockShell(page, label);
       await assertLockReachableAfterScroll(page, label);

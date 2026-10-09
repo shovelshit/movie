@@ -2,14 +2,16 @@ const assert = require("node:assert/strict");
 const http = require("node:http");
 const fs = require("node:fs/promises");
 const path = require("node:path");
+const { pathToFileURL } = require("node:url");
 const { chromium } = require("playwright-core");
 
 async function main() {
-  const { createAccountEnv } = await import("../../worker/test/account-fixtures.js");
-  const { handleEnrollmentApi } = await import("../../worker/src/maoyan/enrollment-api.js");
-  const { default: worker } = await import("../../worker/src/index.js");
+  const toolsRoot = path.resolve(process.env.TOOLS_REPO_ROOT || path.resolve(__dirname, "../../../../"));
+  const { createAccountEnv } = await import(pathToFileURL(path.join(toolsRoot, "worker/test/account-fixtures.js")));
+  const { handleEnrollmentApi } = await import(pathToFileURL(path.join(toolsRoot, "worker/src/maoyan/enrollment-api.js")));
+  const { default: worker } = await import(pathToFileURL(path.join(toolsRoot, "worker/src/index.js")));
   const env = await createAccountEnv({ maxUsers: 2 });
-  const assets = path.resolve(__dirname, "../../worker/public");
+  const assets = path.join(toolsRoot, "worker/public");
   const output = process.argv[2];
   if (!output || !path.isAbsolute(output)) throw new Error("Supply an absolute screenshot directory");
   await fs.mkdir(output, { recursive: true });
