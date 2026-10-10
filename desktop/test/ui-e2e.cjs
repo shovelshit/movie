@@ -2,24 +2,13 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const { chromium } = require("playwright-core");
+const { resolveChromeExecutable } = require("./support/browser.cjs");
 const { startMockWorker } = require("./support/worker.cjs");
 const { startWebFixture } = require("./support/web.cjs");
 
 function argument(name) {
   const index = process.argv.indexOf(name);
   return index >= 0 ? process.argv[index + 1] : "";
-}
-
-function chromeExecutable() {
-  const configured = process.env.MAOYAN_E2E_CHROME;
-  const candidates = [
-    configured,
-    process.platform === "darwin" ? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" : "",
-    process.platform === "win32" ? "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" : "",
-    process.platform === "linux" ? "/usr/bin/google-chrome" : "",
-    process.platform === "linux" ? "/usr/bin/chromium" : "",
-  ].filter(Boolean);
-  return candidates.find((candidate) => fs.existsSync(candidate)) || "";
 }
 
 async function assertDarkTheme(page, panelSelector) {
@@ -205,14 +194,14 @@ async function main() {
   const outputDirectory = path.resolve(argument("--output") || "");
   if (!argument("--output") || !path.isAbsolute(argument("--output"))) throw new Error("--output must be an absolute directory outside the repository");
   fs.mkdirSync(outputDirectory, { recursive: true });
-  const executablePath = chromeExecutable();
-  if (!executablePath) throw new Error("Chrome/Chromium not found; set MAOYAN_E2E_CHROME to an executable path");
+  const executablePath = resolveChromeExecutable();
 
   const worker = await startMockWorker();
   const web = await startWebFixture({ workerUrl: worker.url });
-  const browser = await chromium.launch({ executablePath, headless: true });
   const results = [];
+  let browser;
   try {
+    browser = await chromium.launch({ executablePath, headless: true });
     const context = await browser.newContext();
     const page = await context.newPage();
     const errors = [];
@@ -509,7 +498,7 @@ async function main() {
     fs.writeFileSync(path.join(outputDirectory, "results.json"), JSON.stringify({ ok: true, executablePath, viewports: results.map(({ viewport }) => viewport) }, null, 2));
     console.log(`UI E2E passed with ${executablePath}; screenshots: ${outputDirectory}`);
   } finally {
-    await browser.close();
+    if (browser) await browser.close();
     await web.close();
     await worker.close();
   }

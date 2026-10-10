@@ -4,6 +4,7 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 const { chromium } = require("playwright-core");
+const { resolveChromeExecutable } = require("./support/browser.cjs");
 
 async function main() {
   const toolsRoot = path.resolve(process.env.TOOLS_REPO_ROOT || path.resolve(__dirname, "../../../../"));
@@ -56,7 +57,7 @@ async function main() {
   env.ENROLLMENT_ORIGIN = origin;
   env.ENROLLMENT_HOSTNAME = "127.0.0.1";
   env.PUBLIC_WEB_URL = `${origin}/maoyan/`;
-  const browser = await chromium.launch({ executablePath: process.env.MAOYAN_E2E_CHROME || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", headless: true });
+  let browser;
   const failures = [];
   async function claimPage() {
     const context = await browser.newContext();
@@ -72,6 +73,7 @@ async function main() {
   }
   const count = async () => Number((await env.DB.prepare("SELECT COUNT(*) AS n FROM users WHERE role='user'").first()).n);
   try {
+    browser = await chromium.launch({ executablePath: resolveChromeExecutable(), headless: true });
     const page = await claimPage();
     await page.locator("#btn-claim:enabled").waitFor();
     await page.evaluate(() => window.testChallenge["expired-callback"]());
@@ -171,7 +173,7 @@ async function main() {
     }
     assert.deepEqual(failures, []);
   } finally {
-    await browser.close();
+    if (browser) await browser.close();
     await new Promise((resolve) => { server.close(resolve); server.closeAllConnections(); });
     env.DB.sqlite.close();
   }
