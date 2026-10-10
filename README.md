@@ -10,6 +10,9 @@ parent's expected relative paths; the parent publishes the web assets and
 provides the APIs used by the desktop client. Changes to API contracts require
 coordinated parent changes. This repository does not deploy independently.
 
+Developer code map: [knowledge/README.md](knowledge/README.md) covers the shared
+Web UI and Electron client, with a link to the parent Worker architecture.
+
 Local checks (Node.js required):
 
 ```sh
